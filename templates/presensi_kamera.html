@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presensi Mahasiswa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@tailwindcss/browser@latest"></script>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .heading {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #4a5568;
+            margin-bottom: 1.5rem;
+        }
+        #video-feed {
+            width: 100%;
+            max-height: 400px;
+            border-radius: 0.375rem;
+            border: 2px solid #e2e8f0;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        .button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            background-color: #3b82f6;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
+            margin: 0.5rem auto;
+            display: block;
+            width: 100%;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: #2563eb;
+        }
+        .button:disabled {
+            background-color: #a0aec0;
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+        #capture-button {
+            display: none;
+        }
+        #error-message {
+            color: #e53e3e;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            display: none;
+        }
+        #success-message {
+            color: #38a169;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            display: none;
+        }
+        .instruction-box {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #f7fafc;
+            color: #4a5568;
+            font-size: 0.875rem;
+            text-align: left;
+        }
+
+        .instruction-box h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #2d3748;
+        }
+
+        .instruction-box ol {
+            list-style-position: inside;
+            padding-left: 0;
+        }
+
+        .instruction-box li {
+            margin-bottom: 0.5rem;
+        }
+
+        .scan-animation {
+            position: relative;
+            width: 100%;
+            height: 8px;
+            background-color: rgba(59, 130, 246, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.75rem;
+            display: none;
+        }
+
+        .scan-animation:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, #3b82f6, transparent);
+            animation: scan 2s linear infinite;
+            border-radius: 4px;
+        }
+
+        @keyframes scan {
+            0% {
+                left: -20%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container">
+        <h1 class="heading">Presensi Mahasiswa</h1>
+        <div class="instruction-box" id="instruction-box">
+            <h2>Petunjuk Presensi:</h2>
+            <ol>
+                <li>Klik tombol "Mulai Presensi".</li>
+                <li>Arahkan wajah Anda ke kamera.</li>
+                <li>Sistem akan otomatis mendeteksi dan memproses wajah Anda.</li>
+                <li>Tunggu hingga proses presensi selesai.</li>
+                <li>Jika berhasil, Anda akan melihat pesan konfirmasi.</li>
+            </ol>
+        </div>
+        <video id="video-feed" autoplay playsinline muted></video>
+        <div class="scan-animation" id="scan-animation"></div>
+        <button id="start-button" class="button">Mulai Presensi</button>
+        <button id="capture-button" class="button" style="display: none;">Ambil Foto</button>
+        <div id="error-message" class="mt-4 text-red-500 text-center"></div>
+        <div id="success-message" class="mt-4 text-green-500 text-center"></div>
+    </div>
+
+    <script>
+        const videoFeed = document.getElementById('video-feed');
+        const startButton = document.getElementById('start-button');
+        const captureButton = document.getElementById('capture-button');
+        const errorMessage = document.getElementById('error-message');
+        const successMessage = document.getElementById('success-message');
+        const scanAnimation = document.getElementById('scan-animation');
+        const instructionBox = document.getElementById('instruction-box');
+
+
+        let isStreaming = false;
+        let mediaStream = null;
+
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+            .then(stream => {
+                mediaStream = stream;
+                videoFeed.srcObject = stream;
+                videoFeed.onloadedmetadata = () => {
+                    videoFeed.play();
+                    isStreaming = true;
+                };
+                startButton.style.display = 'none';
+                captureButton.style.display = 'block';
+                videoFeed.style.display = 'block';
+                scanAnimation.style.display = 'block';
+                instructionBox.style.display = 'none';
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+            })
+            .catch(err => {
+                errorMessage.textContent = `Error accessing camera: ${err.message}`;
+                errorMessage.style.display = 'block';
+                console.error('Error accessing camera:', err);
+            });
+        }
+
+        function stopCamera() {
+            if (isStreaming && mediaStream) {
+                mediaStream.getTracks().forEach(track => {
+                    track.stop();
+                });
+                videoFeed.srcObject = null;
+                isStreaming = false;
+            }
+            startButton.textContent = 'Mulai Ulang Presensi';
+            startButton.style.display = 'block';
+            captureButton.style.display = 'none';
+            videoFeed.style.display = 'none';
+            scanAnimation.style.display = 'none';
+        }
+
+        function captureAndSend() {
+            if (!isStreaming) {
+                errorMessage.textContent = 'Camera is not streaming.';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = videoFeed.videoWidth;
+            canvas.height = videoFeed.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(videoFeed, 0, 0, canvas.width, canvas.height);
+            const imageDataURL = canvas.toDataURL('image/jpeg');
+            const blob = dataURLToBlob(imageDataURL);
+
+
+            const formData = new FormData();
+            formData.append('image', blob, 'capture.jpg');
+
+            captureButton.disabled = true;
+            captureButton.textContent = 'Memproses...';
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            scanAnimation.classList.remove('animate-scan');
+
+
+            fetch('/presensi', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                captureButton.disabled = false;
+                captureButton.textContent = 'Ambil Foto';
+                if (data.success) {
+                    successMessage.textContent = data.message;
+                    successMessage.style.display = 'block';
+                    stopCamera();
+                     setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    errorMessage.textContent = data.message;
+                    errorMessage.style.display = 'block';
+                    stopCamera();
+                    setTimeout(() => {
+                        startCamera();
+                    }, 2000);
+
+                }
+            })
+            .catch(error => {
+                captureButton.disabled = false;
+                captureButton.textContent = 'Ambil Foto';
+                errorMessage.textContent = `Error sending data: ${error.message}`;
+                errorMessage.style.display = 'block';
+                console.error('Error sending data:', error);
+                stopCamera();
+                setTimeout(() => {
+                        startCamera();
+                    }, 2000);
+            });
+        }
+
+        function dataURLToBlob(dataURL) {
+            const byteString = atob(dataURL.split(',')[1]);
+            const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+            return new Blob([ab], { type: mimeString });
+        }
+
+        startButton.addEventListener('click', startCamera);
+        captureButton.addEventListener('click', captureAndSend);
+    </script>
+</body>
+</html>

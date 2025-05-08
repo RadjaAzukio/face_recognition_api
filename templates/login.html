@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@tailwindcss/browser@latest"></script>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h1 class="text-2xl font-semibold mb-6 text-center text-gray-800">Login</h1>
+        <form id="login-form" class="space-y-4">
+            <div>
+                <label for="username" class="block text-gray-700 text-sm font-bold mb-2">NIM/Username</label>
+                <input type="text" id="username" name="username" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <div id="username-error" class="text-red-500 text-xs italic" style="display: none;"></div>
+            </div>
+            <div>
+                <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                <input type="password" id="password" name="password" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <div id="password-error" class="text-red-500 text-xs italic" style="display: none;"></div>
+            </div>
+            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full">Login</button>
+        </form>
+        <div id="error-message" class="mt-4 text-red-500 text-center" style="display: none;"></div>
+        <div id="success-message" class="mt-4 text-green-500 text-center" style="display: none;"></div>
+        <p class="mt-4 text-sm text-gray-600 text-center">
+            Belum punya akun?
+            <a href="/registrasi" class="text-blue-500 hover:text-blue-700 font-semibold">Daftar</a>
+        </p>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('login-form');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const usernameError = document.getElementById('username-error');
+        const passwordError = document.getElementById('password-error');
+        const errorMessage = document.getElementById('error-message');
+        const successMessage = document.getElementById('success-message');
+
+        function showError(inputElement, errorMessageElement, message) {
+            inputElement.classList.add('border-red-500');
+            errorMessageElement.textContent = message;
+            errorMessageElement.style.display = 'block';
+        }
+
+        function hideError(inputElement, errorMessageElement) {
+            inputElement.classList.remove('border-red-500');
+            errorMessageElement.style.display = 'none';
+        }
+
+        loginForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            let isFormValid = true;
+
+            if (!usernameInput.value.trim()) {
+                showError(usernameInput, usernameError, 'NIM/Username harus diisi');
+                isFormValid = false;
+            } else {
+                hideError(usernameInput, usernameError);
+            }
+
+            if (!passwordInput.value.trim()) {
+                showError(passwordInput, passwordError, 'Password harus diisi');
+                isFormValid = false;
+            } else {
+                hideError(passwordInput, passwordError);
+            }
+
+            if (isFormValid) {
+                const formData = new FormData(loginForm);
+                fetch('/login', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        successMessage.textContent = data.message;
+                        successMessage.style.display = 'block';
+                        errorMessage.style.display = 'none';
+                        window.location.href = '/presensi'; // Redirect ke halaman presensi
+                    } else {
+                        errorMessage.textContent = data.message;
+                        errorMessage.style.display = 'block';
+                        successMessage.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    errorMessage.textContent = 'Terjadi kesalahan. Silakan coba lagi.';
+                    errorMessage.style.display = 'block';
+                    successMessage.style.display = 'none';
+                    console.error('Error:', error);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrasi Wajah</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .container {
+            max-width: 350px;
+            margin: 5rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #1f2937;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .form-input {
+            width: 75%;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            border: 1px solid #d1d5db;
+            outline: none;
+            font-size: 1rem;
+            transition: border-color 0.15s ease-in-out, shadow-sm 0.15s ease-in-out;
+        }
+        .form-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            background-color: #4f46e5;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
+            width: 100%;
+            font-size: 1rem;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca;
+        }
+        .text-danger {
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        #video-element, #canvas-element {
+            width: 100%;
+            max-width: 320px;
+            height: auto;
+            max-height: 240px;
+            border-radius: 0.375rem;
+            border: 1px solid #d1d5db;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+        #video-element.show, #canvas-element.show {
+            display: block;
+        }
+        #capture-button {
+            margin-top: 0.75rem;
+        }
+        .hidden {
+            display: none;
+        }
+        .block {
+            display: block;
+        }
+        #image-preview {
+            margin-top: 0.75rem;
+        }
+        #preview-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.375rem;
+            border: 1px solid #d1d5db;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container">
+        <h1 class="text-2xl font-semibold text-gray-900 mb-6 text-center">Registrasi Wajah</h1>
+        <form id="registrasi-form" class="space-y-4">
+            <div class="form-group">
+                <label for="nama" class="form-label">Nama Lengkap</label>
+                <input type="text" id="nama" name="nama" class="form-input" placeholder="Nama Lengkap" required>
+            </div>
+            <div class="form-group">
+                <label for="nim" class="form-label">NIM</label>
+                <input type="text" id="nim" name="nim" class="form-input" placeholder="NIM" required>
+            </div>
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" name="password" class="form-input" placeholder="Password" required>
+            </div>
+
+            <div class="form-group">
+                <label for="foto-wajah" class="form-label">Foto Wajah</label>
+                <video id="video-element" class="hidden" autoplay playsinline></video>
+                <canvas id="canvas-element" class="hidden"></canvas>
+                <button id="capture-button" type="button" class="btn-primary">Ambil Foto Wajah</button>
+                <input type="hidden" id="image-data" name="image_data">
+                <div id="image-preview" class="mt-4 hidden">
+                    <label class="block text-sm font-medium text-gray-700">Preview Foto:</label>
+                    <img id="preview-image" src="" alt="Preview" class="mt-2 w-full h-auto">
+                </div>
+            </div>
+
+            <div id="error-message" class="text-danger hidden"></div>
+            <button type="submit" class="btn-primary" id="submit-button">Daftar</button>
+             <div class="mt-4 text-sm text-center">
+                <a href="/login" class="font-medium text-indigo-600 hover:text-indigo-500">
+                    Sudah punya akun? Login
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('registrasi-form');
+        const namaInput = document.getElementById('nama');
+        const nimInput = document.getElementById('nim');
+        const passwordInput = document.getElementById('password');
+        const videoElement = document.getElementById('video-element');
+        const canvasElement = document.getElementById('canvas-element');
+        const captureButton = document.getElementById('capture-button');
+        const imageInput = document.getElementById('image-data');
+        const errorMessage = document.getElementById('error-message');
+        const submitButton = document.getElementById('submit-button');
+        const imagePreview = document.getElementById('image-preview');
+        const previewImage = document.getElementById('preview-image');
+
+        let stream;
+
+        // Fungsi untuk memulai kamera
+        async function startCamera() {
+            try {
+                // Stop any existing stream first
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                videoElement.srcObject = stream;
+                videoElement.classList.add('show');
+                canvasElement.classList.remove('show');
+                imagePreview.classList.add('hidden');
+                captureButton.textContent = 'Ambil Foto Wajah';
+                videoElement.play();
+            } catch (error) {
+                displayErrorMessage(`Error accessing camera: ${error.message || error}`);
+            }
+        }
+
+        // Fungsi untuk mengambil snapshot
+        function captureImage() {
+            if (!videoElement.videoWidth || !videoElement.videoHeight) {
+                displayErrorMessage('Kamera belum siap. Pastikan kamera Anda terhubung dan diizinkan.');
+                return;
+            }
+
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+            const context = canvasElement.getContext('2d');
+            context.drawImage(videoElement, 0, 0, videoElement.videoWidth, videoElement.videoHeight);
+            const imageDataUrl = canvasElement.toDataURL('image/jpeg');
+            imageInput.value = imageDataUrl;
+            videoElement.classList.remove('show');
+            canvasElement.classList.add('show');
+            imagePreview.classList.remove('hidden');
+            previewImage.src = imageDataUrl;
+            captureButton.textContent = 'Ambil Ulang Foto';
+            // Stop the stream after taking picture.
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
+            // Start the camera again for retake
+            setTimeout(startCamera, 500); // Delay start camera sedikit.
+        }
+
+        // Fungsi untuk menampilkan pesan error
+        function displayErrorMessage(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hidden');
+        }
+
+        // Fungsi untuk menyembunyikan pesan error
+        function hideErrorMessage() {
+            errorMessage.classList.add('hidden');
+            errorMessage.textContent = '';
+        }
+
+        // Event listener untuk tombol "Ambil Foto Wajah"
+        captureButton.addEventListener('click', captureImage);
+
+        // Event listener untuk form submission
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            hideErrorMessage();
+            submitButton.disabled = true;
+            submitButton.textContent = 'Memproses...';
+
+            const nama = namaInput.value;
+            const nim = nimInput.value;
+            const password = passwordInput.value;
+            const imageData = imageInput.value;
+
+            if (!imageData) {
+                displayErrorMessage('Silakan ambil foto wajah Anda.');
+                submitButton.disabled = false;
+                submitButton.textContent = 'Daftar';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('nama', nama);
+            formData.append('nim', nim);
+            formData.append('password', password);
+            const blob = await fetch(imageData).then(r => r.blob());
+            formData.append('image', blob, 'face_image.jpg');
+
+            try {
+                const response = await fetch('http://localhost:5000/registrasi', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert(data.message);
+                    // Redirect to login page
+                    window.location.href = '/login'; // Ganti dengan path yang benar ke halaman login Anda
+                } else {
+                    displayErrorMessage(data.message || 'Registrasi gagal.');
+                }
+            } catch (error) {
+                displayErrorMessage(`Terjadi kesalahan: ${error.message || error}`);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Daftar';
+            }
+        });
+
+        // Mulai kamera saat halaman dimuat
+        startCamera();
+
+        // Cleanup camera on unload
+        window.addEventListener('beforeunload', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tambah Mahasiswa</title>
+</head>
+<body>
+    <h1>Tambah Mahasiswa Baru</h1>
+    <form method="POST" action="/mahasiswa" enctype="multipart/form-data">
+        <div>
+            <label for="nim">NIM:</label>
+            <input type="text" id="nim" name="nim" required><br><br>
+        </div>
+        <div>
+            <label for="nama">Nama Lengkap:</label>
+            <input type="text" id="nama" name="nama" required><br><br>
+        </div>
+        <div>
+            <label for="image">Foto Wajah:</label>
+            <input type="file" id="image" name="image" accept="image/*" required><br><br>
+        </div>
+        <button type="submit">Tambah Mahasiswa</button>
+    </form>
+    {% if message %}
+    <p>{{ message }}</p>
+    {% endif %}
+    {% if error %}
+    <p style="color: red;">{{ error }}</p>
+    {% endif %}
+</body>
+</html>
